@@ -15,7 +15,6 @@ from django.db.models import Q
 import json
 from cart.cart import Cart
 
-# Create your views here.
 
 def update_info(request):
     if request.user.is_authenticated:
@@ -114,7 +113,12 @@ def home(request):
 def about(request):
     
     return render(request,'about.html',{})
+
+
     
+from .decorators import anonymous_required  # Import the decorator
+
+@anonymous_required
 def login_user(request):
     if request.method == "POST":
         username = request.POST['username']
