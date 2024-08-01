@@ -54,9 +54,9 @@ class Customer(models.Model):
     
 class Product(models.Model):
     name=models.CharField(max_length=50)
-    price=models.DecimalField(default=0,decimal_places=2,max_digits=6)
+    price=models.DecimalField(default=0,decimal_places=2,max_digits=10)
     category=models.ForeignKey(Category,on_delete=models.CASCADE,default=1)
-    description=models.CharField(max_length=250,default='',blank='True',null='True')
+    description=models.CharField(max_length=500,default='',blank='True',null='True')
     image=models.ImageField(upload_to='uploads/product/')
     
     #Add Sale
@@ -65,6 +65,7 @@ class Product(models.Model):
     
     def __str__(self):
         return self.name
+    
     
 class Order(models.Model):
     product= models.ForeignKey(Product,on_delete=models.CASCADE)

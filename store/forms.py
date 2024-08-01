@@ -1,7 +1,60 @@
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm, SetPasswordForm
 from django import forms
-from .models import Profile
+from .models import Profile,Category
+from .models import Product
+
+
+class CategoryForm(forms.ModelForm):
+    class Meta:
+        model = Category
+        fields = ['name']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+        
+class ProductForm(forms.ModelForm):
+    category = forms.ModelChoiceField(
+        queryset=Category.objects.all(), 
+        required=True, 
+        empty_label="Select Category", 
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+    is_sale = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+    sale_price = forms.DecimalField(decimal_places=2, max_digits=6, required=False, widget=forms.NumberInput(attrs={'class': 'form-control'}))
+
+    class Meta:
+        model = Product
+        fields = ['name', 'price', 'category', 'description', 'image', 'is_sale', 'sale_price']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 9}),
+            'image': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        is_sale = cleaned_data.get('is_sale')
+        sale_price = cleaned_data.get('sale_price')
+
+        if is_sale and not sale_price:
+            self.add_error('sale_price', 'Please enter a sale price.')
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        product = super().save(commit=False)
+        sale_price = self.cleaned_data.get('sale_price')
+        if sale_price is None:
+            sale_price = 0  # or any default value you prefer
+
+        product.sale_price = sale_price
+
+        if commit:
+            product.save()
+        return product
 
 class UserInfoForm(forms.ModelForm):
     phone = forms.CharField(label="", widget=forms.TextInput(attrs={'class':'form-control', 'placeholder':'Phone'}), required=False)

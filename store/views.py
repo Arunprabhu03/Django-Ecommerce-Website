@@ -1,4 +1,4 @@
-from django.shortcuts import render,redirect
+from django.shortcuts import render,redirect, get_object_or_404
 from .models import Product,Category,Profile
 from django.contrib.auth import authenticate,login,logout
 from django.contrib import messages
@@ -15,8 +15,80 @@ from django.db.models import Q
 import json
 from cart.cart import Cart
 
+from .models import Category, Product
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import login_required,user_passes_test
+from .forms import ProductForm,CategoryForm
+
+#delete category by admin
+@user_passes_test(lambda u: u.is_superuser)
+def delete_category(request, category_id):
+    category = get_object_or_404(Category, pk=category_id)
+    if request.method == 'POST':
+        category.delete()
+        messages.success(request, 'Category deleted successfully.')
+    return redirect('category_summary')
+
+#adding category and product by admin or superuser in the webpage
+@staff_member_required
+def add_category(request):
+    categories = Category.objects.all()
+    if request.method == 'POST':
+        form = CategoryForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Category added successfully.')
+            return redirect('category_summary') 
+    else:
+        form = CategoryForm()
+    return render(request, 'add_category.html', {'form': form,'categories': categories})
+
+@staff_member_required
+def add_product(request):
+    categories = Category.objects.all()
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Product added successfully.')
+            return redirect('home')
+        else:
+            messages.error(request, 'Error adding product. Please check the form.')
+    else:
+        form = ProductForm()
+    return render(request, 'add_product.html', {'form': form,'categories': categories})
+
+
+
+@staff_member_required
+def update_product(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    categories = Category.objects.all()
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES, instance=product)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Product updated successfully.')
+            return redirect('product', pk=pk)  
+        else:
+            messages.error(request, 'Error updating product. Please check the form.')
+    else:
+        form = ProductForm(instance=product)
+    return render(request, 'update_product.html', {'form': form, 'product': product, 'categories': categories})
+
+@staff_member_required
+def delete_product(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    if request.method == 'POST':
+        product.delete()
+        messages.success(request, 'Product deleted successfully.')
+        return redirect('home')  
+    return render(request, 'delete_product.html', {'product': product})
+
+
 
 def update_info(request):
+    categories = Category.objects.all()
     if request.user.is_authenticated:
         # Get Current User
         current_user = Profile.objects.get(user__id=request.user.id)
@@ -39,12 +111,14 @@ def update_info(request):
             messages.success(request, "Your Info Has Been Updated!!")
             return redirect('home')
         
-        return render(request, "update_info.html", {'form':form, 'shipping_form':shipping_form})
+        return render(request, "update_info.html", {'form':form, 'shipping_form':shipping_form,'categories': categories})
     else:
         messages.success(request, "You Must Be Logged In To Access That Page!!")
         return redirect('home')
 
 def update_password(request):
+    categories = Category.objects.all()
+    
     if request.user.is_authenticated:
         current_user = request.user
         # Did they fill out the form
@@ -62,12 +136,13 @@ def update_password(request):
                     return redirect('update_password')
         else:
             form = ChangePasswordForm(current_user)
-            return render(request, "update_password.html", {'form':form})
+            return render(request, "update_password.html", {'form':form,'categories': categories})
     else:
         messages.success(request, "You Must Be Logged In To View That Page...")
         return redirect('home')
 
 def update_user(request):
+    categories = Category.objects.all()
     if request.user.is_authenticated:
         current_user = User.objects.get(id=request.user.id)
         user_form = UpdateUserForm(request.POST or None, instance=current_user)
@@ -77,7 +152,7 @@ def update_user(request):
                 login(request, current_user)
                 messages.success(request, "User Has Been Updated!!")
                 return redirect('home')
-        return render(request, "update_user.html", {'user_form':user_form})
+        return render(request, "update_user.html", {'user_form':user_form,'categories': categories})
         
     else:
         messages.success(request, "You Must Be Logged In To Access That Page!!")
@@ -88,34 +163,39 @@ def category_summary(request):
     return render(request, 'category_summary.html', {"categories":categories})	
 
 def category(request, foo):
+    categories = Category.objects.all()
     # Replace hyphens with spaces
-    foo = foo.replace('-',' ')
-    #Grab the category from the url
-    try:
-        category=Category.objects.get(name=foo)
-        products = Product.objects.filter(category=category)
-        return render(request,'category.html',{'products':products, 'category':category})
+    foo = foo.replace('-', ' ')
     
-    except:
-        messages.success(request,("That category doesn't exist!!"))
+    try:
+        category = Category.objects.get(name__iexact=foo)  # Case-insensitive lookup
+        products = Product.objects.filter(category=category)
+        return render(request, 'category.html', {'products': products, 'category': category,'categories': categories})
+    
+    except Category.DoesNotExist:
+        messages.success(request, "That category doesn't exist!!")
         return redirect('home')
+
 
 def product(request,pk):
     product = Product.objects.get(id=pk)
-    return render(request,'product.html',{'product':product})
+    categories = Category.objects.all()
+    return render(request,'product.html',{'product':product,'categories': categories})
     
 
 def home(request):
+    categories = Category.objects.all()
     products = Product.objects.all()
     
-    return render(request,'home.html',{'products': products})
+    return render(request,'home.html',{'products': products, 'categories': categories})
 
 def about(request):
-    
-    return render(request,'about.html',{})
+    categories = Category.objects.all()
+    return render(request,'about.html',{'categories': categories})
 
 
-    
+
+#For preventing a logged in user from accessing the login page again by using the /login url
 from .decorators import anonymous_required  # Import the decorator
 
 @anonymous_required
@@ -173,16 +253,19 @@ def register_user(request):
 		return render(request, 'register.html', {'form':form})
 
 def search(request):
-    # Determine if they filled out the form
-	if request.method == "POST":
-		searched = request.POST['searched']
-		# Query The Products DB Model
-		searched = Product.objects.filter(Q(name__icontains=searched) | Q(description__icontains=searched))
-		# Test for null
-		if not searched:
-			messages.success(request, "That Product Does Not Exist...Please try Again.")
-			return render(request, "search.html", {})
-		else:
-			return render(request, "search.html", {'searched':searched})
-	else:
-		return render(request, "search.html", {})	
+    categories = Category.objects.all()
+    searched = request.POST.get('searched')
+    
+    if searched:
+        # Query The Products DB Model
+        searched = Product.objects.filter(Q(name__icontains=searched) #| Q(description__icontains=searched 
+        )
+        # Test for null
+        if not searched:
+            messages.success(request, "That Product Does Not Exist...Please try Again.")
+            return render(request, "search.html", {'categories': categories})
+        else:
+            return render(request, "search.html", {'searched': searched, 'categories': categories})
+    else:
+        return render(request, "search.html", {'categories': categories})
+

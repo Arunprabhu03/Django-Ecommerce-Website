@@ -1,29 +1,52 @@
+
 {% extends 'base.html' %}
+
 {% block content %}
-
-<!-- Header-->
-        <header class="bg-dark py-5">
-            <div class="container px-4 px-lg-5 my-5">
-                <div class="text-center text-white">
-                    <h1 class="display-4 fw-bolder">Categories</h1>
-                    <p class="lead fw-normal text-white-50 mb-0">Choose Your Category Below...</p>
-                </div>
+    <!-- Header-->
+    <header class="bg-dark py-5">
+        <div class="container px-4 px-lg-5 my-5">
+            <div class="text-center text-white">
+                <h1 class="display-4 fw-bolder">Categories</h1>
+                <p class="lead fw-normal text-white-50 mb-0">Choose Your Category Below...</p>
             </div>
-        </header>
+        </div>
+    </header>
+    <br/><br/>
 
-        <div class="container">
-            <div class="row">
-                <center>
-                    <div class="col-8">
-                        <br/><br/>
-                        
-                        {% for category in categories %}
-                            <h3><a href="{% url 'category' category %}">{{ category }}</a></h3>
-                        {% endfor %}
-<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
+    <div class="container">
+
+        <div class="row">
+            {% for category in categories %}
+            <div class="col-md-4 mb-4">
+                <a href="{% url 'category' category %}" style="text-decoration: none; color: inherit;">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h3 class="card-title" style="color: dimgray;">{{ category.name }}</h3>
+                            {% if user.is_superuser %}
+                            <form method="post" action="{% url 'delete_category' category.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm mt-2">Delete</button>
+                            </form>
+                            {% endif %}
                         </div>
-                    </center>
-                </div>
+                    </div>
+                </a>
             </div>
+            {% endfor %}
+        </div>
+        <br/><br/>
+        {% if user.is_superuser %}
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <form method="post" action="{% url 'add_category' %}" class="mb-3">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn btn-secondary">Add Category</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    <br/><br/><br/><br/><br/><br/><br/><br/>
 
 {% endblock %}

@@ -1,3 +1,5 @@
+#For preventing a logged in user from accessing the login page again by using the /login url
+
 from django.shortcuts import redirect
 
 def anonymous_required(view_function, redirect_to=None):

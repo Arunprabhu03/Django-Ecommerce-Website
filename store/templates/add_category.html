@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+<!-- Header-->
+<header class="bg-dark py-5">
+    <div class="container px-4 px-lg-5 my-5">
+        <div class="text-center text-white">
+            <h1 class="display-4 fw-bolder">Add Category</h1>
+            <p class="lead fw-normal text-white-50 mb-0">Add a new category to TrendyFinds...</p>
+        </div>
+    </div>
+</header>
+
+<div class='container'>
+    <div class='row'>
+        <div class="col-md-6 offset-md-3">
+            <br/><br/> 
+            <br/><br/> 
+            
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="row mb-3">
+                    <label for="{{ form.name.id_for_label }}" class="col-sm-2 col-form-label">{{ form.name.label }}</label>
+                    <div class="col-sm-10">
+                        {{ form.name }}
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-secondary">Add Category</button>
+            </form>
+        </div>
+    </div>
+</div>
+<br/><br/>   <br/><br/><br/><br/>   <br/><br/>
+
+{% endblock %}

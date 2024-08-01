@@ -7,8 +7,7 @@
             <div class="container px-4 px-lg-5 my-5">
                 <div class="text-center text-white">
                     <h1 class="display-4 fw-bolder">{{ category }}</h1>
-                    <p class="lead fw-normal text-white-50 mb-0">Category Page 
-                    </p>
+                    <p class="lead fw-normal text-white-50 mb-0">Explore our {{ category }} collection</p>
                 </div>
             </div>
         </header>
@@ -74,6 +73,20 @@
                     {% endfor %}
 
                 </div>
+                {% if user.is_superuser %}
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <form method="post" action="{% url 'add_product' %}" class="mb-3">
+                            {% csrf_token %}
+                            {{ form.as_p }}
+                            <button type="submit" class="btn btn-secondary">Add Product</button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
             </div>
+            
         </section>
+        
+        <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
 {% endblock %}

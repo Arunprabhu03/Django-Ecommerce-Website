@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - TrendyFinds</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .invoice-container {
+            background-color: #fff;
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .invoice-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .invoice-header h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .invoice-header p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .order-details {
+            margin-bottom: 20px;
+        }
+        .order-details h2 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .order-summary {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .order-summary th, .order-summary td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .order-summary th {
+            background-color: #f2f2f2;
+        }
+        .total {
+            text-align: right;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-container">
+        <div class="invoice-header">
+            <h1>Invoice - TrendyFinds</h1>
+            <p>Thank you for your order!</p>
+        </div>
+
+        <div class="order-details">
+            <h2>Order Details</h2>
+            <p><strong>Order #: </strong>{{ order.id }}</p>
+            <p><strong>Date Ordered: </strong>{{ order.date_ordered }}</p>
+        </div>
+
+        <table class="order-summary">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.product.name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>Rs {{ item.price }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2" class="total">Total</td>
+                    <td class="total">Rs {{ order.amount_paid }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="footer">
+            <p>For any inquiries, please contact us at support@trendyfinds.com</p>
+        </div>
+    </div>
+</body>
+</html>

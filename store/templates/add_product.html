@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Header-->
+<header class="bg-dark py-5">
+    <div class="container px-4 px-lg-5 my-5">
+        <div class="text-center text-white">
+            <h1 class="display-4 fw-bolder">Add Product</h1>
+            <p class="lead fw-normal text-white-50 mb-0">Add a new product to store...</p>
+        </div>
+    </div>
+</header>
+<div class='container'>
+    <div class='row'>
+        <div class="col-md-6 offset-md-3">
+            <br/><br/> 
+            <br/><br/> 
+            
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="row mb-3">
+                    <label for="{{ form.name.id_for_label }}" class="col-sm-2 col-form-label">{{ form.name.label }}</label>
+                    <div class="col-sm-10">
+                        {{ form.name }}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <label for="{{ form.price.id_for_label }}" class="col-sm-2 col-form-label">{{ form.price.label }}</label>
+                    <div class="col-sm-10">
+                        {% if form.price.value %}
+                            {{ form.price }}
+                        {% else %}
+                            <input type="number" name="price" class="form-control" id="id_price" placeholder="Enter price">
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <label for="{{ form.category.id_for_label }}" class="col-sm-2 col-form-label">{{ form.category.label }}</label>
+                    <div class="col-sm-10">
+                        {{ form.category }}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <label for="{{ form.description.id_for_label }}" class="col-sm-2 col-form-label">{{ form.description.label }}</label>
+                    <div class="col-sm-10">
+                        <textarea name="{{ form.description.name }}" class="form-control" id="id_{{ form.description.name }}" rows="5" placeholder="Enter description"></textarea>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <label for="{{ form.image.id_for_label }}" class="col-sm-2 col-form-label">{{ form.image.label }}</label>
+                    <div class="col-sm-10">
+                        {{ form.image }}
+                    </div>
+                </div>
+                
+                <fieldset class="row mb-3">
+                    <legend class="col-form-label col-sm-2 pt-0">{{ form.is_sale.label }}</legend>
+                    <div class="col-sm-10">
+                        <div class="form-check">
+                            {{ form.is_sale }}
+                            <label class="form-check-label" for="{{ form.is_sale.id_for_label }}">
+                                Is on Sale
+                            </label>
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <div class="row mb-3">
+                    <label for="{{ form.sale_price.id_for_label }}" class="col-sm-2 col-form-label">{{ form.sale_price.label }}</label>
+                    <div class="col-sm-10">
+                        {% if form.sale_price.value %}
+                            {{ form.sale_price }}
+                        {% else %}
+                            <input type="number" name="sale_price" class="form-control" id="id_sale_price" placeholder="Enter sale price">
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Add Product</button>
+            </form>
+            <br/><br/>   <br/><br/>          
+        </div>
+    </div>
+</div>
+{% endblock %}

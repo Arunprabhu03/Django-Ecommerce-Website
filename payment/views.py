@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from payment.models import ShippingAddress, Order, OrderItem
 from cart.cart import Cart
 from django.contrib.auth.models import User
@@ -7,38 +7,62 @@ from store.models import Product, Profile
 import datetime
 from payment.forms import ShippingForm, PaymentForm
 
+
+from django.utils.safestring import mark_safe
+from django.urls import reverse
+
 # Create your views here.
 
-def orders(request, pk):
-    if request.user.is_authenticated and request.user.is_superuser:
-        # Get the order
-        order = Order.objects.get(id=pk)
-        # Get the order items
-        items = OrderItem.objects.filter(order=pk)
+def cancel_order(request, pk):
+    if request.method == 'POST':
+        order = get_object_or_404(Order, id=pk, user=request.user)
+        # Implement cancellation logic here (e.g., update order status or delete order)
+        order.delete()  # Example: Deleting the order
+        
+        messages.success(request, 'Order cancelled successfully')
 
-        if request.POST:
-            status = request.POST['shipping_status']
-            # Check if true or false
-            if status == "true":
-                # Get the order
-                order = Order.objects.filter(id=pk)
-                # Update the status
-                now = datetime.datetime.now()
-                order.update(shipped=True, date_shipped=now)
-            else:
-                # Get the order
-                order = Order.objects.filter(id=pk)
-                # Update the status
-                order.update(shipped=False)
-            messages.success(request, "Shipping Status Updated")
-            return redirect('home')
-
-        return render(request, 'payment/orders.html', {"order":order, "items":items})
-
+        # Redirect to appropriate dashboard after cancellation
+        if order.shipped:
+            return redirect('shipped_dash')
+        else:
+            return redirect('user_orders')
     else:
-        messages.success(request, "Access Denied")
-        return redirect('home')
+        # Handle GET requests or other methods
+        return redirect('home')  # Redirect to home if method is not POST
 
+
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def user_orders(request):
+    orders = Order.objects.filter(user=request.user).order_by('-date_ordered')
+    return render(request, 'payment/user_orders.html', {'orders': orders})
+
+
+@login_required
+def orders(request, pk):
+    # Get the order
+    order = get_object_or_404(Order, id=pk, user=request.user)
+    # Get the order items
+    items = OrderItem.objects.filter(order=order)
+
+    # Check if POST request to update shipping status
+    if request.method == 'POST' and request.user.is_superuser:
+        status = request.POST.get('shipping_status')
+        if status == 'true':
+            # Update the order as shipped
+            order.shipped = True
+            order.date_shipped = datetime.datetime.now()
+        else:
+            # Update the order as not shipped
+            order.shipped = False
+            order.date_shipped = None  
+
+        order.save()
+        messages.success(request, "Shipping Status Updated")
+        return redirect('orders', pk=pk)
+
+    return render(request, 'payment/orders.html', {"order": order, "items": items})
 
 def not_shipped_dash(request):
     if request.user.is_authenticated and request.user.is_superuser:
@@ -54,7 +78,7 @@ def not_shipped_dash(request):
             order.update(shipped=True, date_shipped=now)
             # redirect
             messages.success(request, "Shipping Status Updated")
-            return redirect('home')
+            return redirect('not_shipped_dash')
 
         return render(request, "payment/not_shipped_dash.html", {"orders":orders})
     else:
@@ -75,7 +99,7 @@ def shipped_dash(request):
 			order.update(shipped=False)
 			# redirect
 			messages.success(request, "Shipping Status Updated")
-			return redirect('home')
+			return redirect('shipped_dash')
 
 		return render(request, "payment/shipped_dash.html", {"orders":orders})
 	else:
@@ -143,8 +167,10 @@ def process_order(request):
             # Delete shopping cart in database (old_cart field)
             current_user.update(old_cart="")
 
-
-            messages.success(request, "Order Placed!")
+            invoice_url = reverse('generate_invoice', args=[create_order.pk])
+            message = mark_safe(f"Order Placed! <a href='{invoice_url}' class='btn btn-primary'>Download Invoice</a>")
+            messages.success(request, message)
+            #messages.success(request, "Order Placed!")
             return redirect('home')
 
             
@@ -182,10 +208,11 @@ def process_order(request):
                 if key == "session_key":
                     # Delete the key
                     del request.session[key]
-
-
-
-            messages.success(request, "Order Placed!")
+                
+            invoice_url = reverse('generate_invoice', args=[create_order.pk])
+            message = mark_safe(f"Order Placed! <a href='{invoice_url}' class='btn btn-primary'>Download Invoice</a>")
+            messages.success(request, message)
+            #messages.success(request, "Order Placed!")
             return redirect('home')
 
     else:
@@ -215,14 +242,13 @@ def billing_info(request):
                 # Get The Billing Form
                 billing_form = PaymentForm()
                 return render(request, "payment/billing_info.html", {"cart_products":cart_products, "quantities":quantities, "totals":totals, "shipping_info":request.POST, "billing_form":billing_form})
-
-
             
             shipping_form = request.POST
             return render(request, "payment/billing_info.html", {"cart_products":cart_products, "quantities":quantities, "totals":totals, "shipping_form":shipping_form})	
         else:
             messages.success(request, "Access Denied")
             return redirect('home')
+    
 
 def checkout(request):
     # Get the cart
@@ -245,3 +271,31 @@ def checkout(request):
 
 def payment_success(request):
 	return render(request, "payment/payment_success.html", {})
+
+
+
+
+from django.http import HttpResponse
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+
+def generate_invoice(request, pk):
+    if request.user.is_authenticated :
+        order = Order.objects.get(id=pk)
+        items = OrderItem.objects.filter(order=pk)
+        template_path = 'payment/invoice.html'
+        context = {
+            'order': order,
+            'items': items,
+        }
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="invoice_{order.id}.pdf"'
+        template = get_template(template_path)
+        html = template.render(context)
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        if pisa_status.err:
+            return HttpResponse('We had some errors with code %s' % html)
+        return response
+    else:
+        messages.success(request, "Access Denied")
+        return redirect('home')
